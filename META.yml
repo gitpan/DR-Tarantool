@@ -1,0 +1,28 @@
+--- #YAML:1.0
+name:               DR-Tarantool
+version:            0.01
+abstract:           Perl extension for blah blah blah
+author:
+    - Dmitry E. Oboukhov <unera@debian.org>
+license:            artistic
+distribution_type:  module
+configure_requires:
+    ExtUtils::MakeMaker:  0
+build_requires:
+    ExtUtils::MakeMaker:  0
+requires:
+    AnyEvent:             0
+    Carp:                 0
+    Cwd:                  0
+    File::Path:           0
+    File::Spec::Functions:  0
+    File::Temp:           0
+    IO::Socket::INET:     0
+no_index:
+    directory:
+        - t
+        - inc
+generated_by:       ExtUtils::MakeMaker version 6.57_05
+meta-spec:
+    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
+    version:  1.4
