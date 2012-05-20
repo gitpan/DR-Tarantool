@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name:               DR-Tarantool
-version:            0.01
-abstract:           Perl extension for blah blah blah
+version:            0.02
+abstract:           perl driver for L<tarantool|http://tarantool.org>
 author:
     - Dmitry E. Oboukhov <unera@debian.org>
 license:            artistic
