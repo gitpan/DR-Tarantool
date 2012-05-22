@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               DR-Tarantool
-version:            0.03
+version:            0.04
 abstract:           perl driver for L<tarantool|http://tarantool.org>
 author:
     - Dmitry E. Oboukhov <unera@debian.org>
@@ -19,6 +19,9 @@ requires:
     File::Spec::Functions:  0
     File::Temp:           0
     IO::Socket::INET:     0
+resources:
+    bugtracker:  https://github.com/unera/dr-tarantool/issues
+    homepage:    https://github.com/unera/dr-tarantool
 no_index:
     directory:
         - t
