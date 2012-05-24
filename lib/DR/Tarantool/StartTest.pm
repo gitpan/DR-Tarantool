@@ -110,8 +110,6 @@ sub _start_tarantool {
         printf $fh "%s = %s\n", $_, $self->{$_};
     }
 
-    printf $fh "script_dir = %s\n", $self->{temp}
-        if $self->{cfg_data} =~ /script_dir/;
     printf $fh "pid_file = %s\n", $self->{pid};
     printf $fh qq{logger = "cat > %s"\n"}, $self->{log};
 
@@ -132,9 +130,17 @@ sub _start_tarantool {
     }
 
     $self->{started} = 1;
-    sleep 1;
 
     chdir $self->{cwd};
+
+    # wait for starting tarantool
+    for (my $i = 0; $i < 100; $i++) {
+        last if IO::Socket::INET->new(
+            PeerAddr => '127.0.0.1', PeerPort => $self->primary_port
+        );
+
+        select undef, undef, undef, 0.01;
+    }
 }
 
 
