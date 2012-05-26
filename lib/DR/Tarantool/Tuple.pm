@@ -61,7 +61,7 @@ sub new :method {
         my $self = $class->new( $tuple->[0], $space );
 
         for (my $i = 1; $i < @$tuple; $i++) {
-            $self->next( $tuple->[1] );
+            $self->next( $tuple->[ $i ] );
         }
         return $self;
     }
@@ -301,7 +301,7 @@ Returns next element from the iterator.
 sub next :method {
     my ($self) = @_;
     if (defined $self->{cur}) {
-        $self->{cur} = $self->{cur}{tail};
+        $self->{cur} = $self->{cur}->next;
     } else {
         $self->{cur} = $self->{head}
     }
