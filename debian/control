@@ -1,13 +1,15 @@
 Source: libdr-tarantool-perl
 Section: perl
-Homepage: http://search.cpan.org/dist/DBIx-DR/
+Homepage: http://search.cpan.org/dist/DR-Tarantool/
 Maintainer: Dmitry E. Oboukhov <unera@debian.org>
 Build-Depends: debhelper (>= 7), cdbs,
  libanyevent-perl,
  libtarantool-dev,
  libdevel-globaldestruction-perl,
  libjson-xs-perl,
- tarantool
+ tarantool,
+ aspell-en,
+ libtest-spelling-perl
 Standards-Version: 3.9.2
 Priority: extra
 VCS-Browser: https://github.com/unera/dbix-dr
@@ -17,6 +19,7 @@ Depends: ${perl:Depends}, ${misc:Depends}, ${shlibs:Depends},
  libanyevent-perl,
  libjson-xs-perl,
  libdevel-globaldestruction-perl
+Recommends: libcoro-perl
 Architecture: any
 Suggests: tarantool
 Description: perl driver for Tarantool
