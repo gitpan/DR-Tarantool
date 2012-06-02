@@ -101,15 +101,12 @@ use AnyEvent;
 use AnyEvent::Socket;
 use AnyEvent::Handle;
 use Carp;
+use Devel::GlobalDestruction;
 $Carp::Internal{ (__PACKAGE__) }++;
 
 use Scalar::Util 'weaken';
 require DR::Tarantool;
 use Data::Dumper;
-
-our $req_id;
-our %requests;
-
 
 
 =head2 connect
@@ -206,11 +203,12 @@ sub disconnect {
 }
 
 sub DESTROY {
+    return if in_global_destruction;
     my ($self) = @_;
     if ($self->is_connected) {
-        $self->{handle}->destroy;
         $self->{handle}->on_error( sub {  });
         $self->{handle}->on_eof( sub {  });
+        $self->{handle}->destroy;
         delete $self->{handle};
     }
 }
@@ -564,8 +562,13 @@ sub _request {
 }
 
 sub _req_id {
-    return $req_id = 0 unless defined $req_id;
-    return ++$req_id;
+    my ($self) = @_;
+    for (my $id = $self->{req_id} || 0;; $id++) {
+        $id = 0 unless $id < 0x7FFF_FFFF;
+        next if exists $self->{wait}{$id};
+        $self->{req_id} = $id + 1;
+        return $id;
+    }
 }
 
 sub _fatal_error {

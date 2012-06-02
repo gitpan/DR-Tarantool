@@ -215,9 +215,9 @@ SKIP: {
             [ pack 'L<', 2 ], # keys
             [
                 [ 1 => set      => 'abcdef' ],
-                [ 2 => or       => 23 ],
-                [ 2 => and      => 345 ],
-                [ 2 => xor      => 744 ],
+                [ 2 => or       => pack 'L<', 23 ],
+                [ 2 => and      => pack 'L<', 345 ],
+                [ 2 => xor      => pack 'L<', 744 ],
             ],
             TNT_FLAG_RETURN, # flags
             sub {
@@ -318,7 +318,7 @@ SKIP: {
     }
 
     # memory leak (You have touse external tool to watch memory)
-    if ($ENV{DRV_LEAK_TEST}) {
+    if ($ENV{LEAK_TEST}) {
         for my $cv (condvar AnyEvent) {
 
             my $cnt = 1000000;

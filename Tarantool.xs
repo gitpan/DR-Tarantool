@@ -135,9 +135,12 @@ static struct tnt_stream *tmake_oplist( AV *ops ) {
 		}
 
 		ARITH: {
-			tnt_update_arith(
-				b, fno, opcode, SvIV( *av_fetch( aop, 2, 0 ) )
-			);
+		        unsigned long long v = 0;
+			char *data = SvPV( *av_fetch( aop, 2, 0 ), size );
+			if (sizeof(v) < size)
+			    size = sizeof(v);
+			memcpy(&v, data, size); 
+			tnt_update_arith( b, fno, opcode, v );
 			continue;
 		}
 
@@ -158,7 +161,7 @@ static void hash_isave(HV *h, const char *k, uint32_t v) {
 static AV * extract_tuples(struct tnt_reply *r) {
 	struct tnt_iter it;
 	tnt_iter_list(&it, TNT_REPLY_LIST(r));
-	AV *res = newAV();
+	AV *res = (AV *)sv_2mortal((SV *)newAV());
 	while (tnt_next(&it)) {
 		struct tnt_iter ifl;
 		struct tnt_tuple *tu = TNT_ILIST_TUPLE(&it);
@@ -315,8 +318,11 @@ SV * _pkt_call_lua( req_id, flags, proc, tuple )
 
 
 
-HV * _pkt_parse_response( response )
+SV * _pkt_parse_response( response )
 	SV *response
+
+	INIT:
+		HV *res = (HV *)sv_2mortal((SV *)newHV());
 
 	CODE:
 		if ( !SvOK(response) )
@@ -329,7 +335,6 @@ HV * _pkt_parse_response( response )
 		int cnt = tnt_reply( &reply, data, size, &offset );
 		int i, j;
 
-		HV *res = newHV();
 		if ( cnt < 0 ) {
 			hash_ssave(res, "status", "fatal");
 			hash_ssave(res,
@@ -349,13 +354,10 @@ HV * _pkt_parse_response( response )
                         } else {
 			    hash_ssave(res, "status", "ok");
                             AV *tuples = extract_tuples( &reply );
-                            hv_store(
-                                res, "tuples", 6, newRV_noinc((SV *)tuples), 0
-                            );
+                            hv_store(res, "tuples", 6, newRV((SV *)tuples), 0);
                         }
 		}
-                sv_2mortal( (SV *) res );
-		RETVAL = res;
+		RETVAL = newRV((SV *)res);
 		tnt_reply_free( &reply );
 
 	OUTPUT:
