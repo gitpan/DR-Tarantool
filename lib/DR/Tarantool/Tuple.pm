@@ -261,7 +261,7 @@ sub count {
     unless (exists $self->{count}) {
         my $o = $self->{head};
         $self->{count} = 0;
-        last unless $o;
+        return $self->{count} unless $o;
 
         $self->{count}++;
 
@@ -318,7 +318,36 @@ sub next :method {
         return $c->$m( $self->{cur} );
     }
     return $self->{cur};
+}
 
+
+=head2 all
+
+Returns all elements (or fields of elements) from the iterator.
+
+    my @list = $iter->all;                  # all tuples
+
+    my @list = map { $_->id } $iter->all;
+    my @list = $iter->all('id');            # the same
+
+=cut
+
+sub all {
+    my ($self, $m) = @_;
+
+    $self->reset;
+    my @res;
+
+    while(my $item = $self->next) {
+        if (@_ > 1) {
+            push @res => $item->$m;
+            next;
+        }
+
+        push @res => $item;
+    }
+
+    return @res;
 }
 
 =head1 COPYRIGHT AND LICENSE

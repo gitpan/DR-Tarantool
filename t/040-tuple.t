@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 49;
+use Test::More tests    => 59;
 use Encode qw(decode encode);
 
 
@@ -88,6 +88,19 @@ cmp_ok $tp->raw(1), '~~', 'gg', 'raw(1)';
 $tp = $it->next;
 cmp_ok $tp, '~~', undef, 'iterator finished';
 
+my @tlist = $it->all;
+cmp_ok scalar @tlist, '~~', 3, '3 items by ->all';
+cmp_ok $tlist[0]->a, '~~', 'aa', 'item[0].raw(0)';
+cmp_ok $tlist[0]->b, '~~', 'bb', 'item[0].raw(1)';
+cmp_ok $tlist[1]->a, '~~', 'dd', 'item[1].raw(0)';
+cmp_ok $tlist[1]->b, '~~', 'ee', 'item[1].raw(1)';
+cmp_ok $tlist[2]->a, '~~', 'ff', 'item[2].raw(0)';
+cmp_ok $tlist[2]->b, '~~', 'gg', 'item[2].raw(1)';
+
+@tlist = $it->all('a');
+cmp_ok scalar @tlist, '~~', 3, '3 items by ->all("a")';
+ok @tlist ~~ @{[qw(aa dd ff)]}, 'items were fetched properly';
+
 
 while( my $t = $it->next ) {
     isa_ok $t => 'DR::Tarantool::Tuple';
@@ -126,6 +139,11 @@ isa_ok $tp => 'TestItem';
 isa_ok $tp->{tuple} => 'DR::Tarantool::Tuple';
 cmp_ok $tp->{tuple}->raw(0), '~~', 'aa',  'tuple(0).raw(0)';
 cmp_ok $iter->next->{tuple}->raw(0), '~~', 'bb', 'tuple(1).raw(0)';
+
+$tp = DR::Tarantool::Tuple->new([ [ 'aa' ], [ 'bb' ], ], $s->space('test'));
+$iter = $tp->iter;
+undef $tp;
+cmp_ok $iter->count, '~~', 2, 'iterator saves tuple ref';
 
 # You have to use external tool to watch memory
 while($ENV{LEAK_TEST}) {
