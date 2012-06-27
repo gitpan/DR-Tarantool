@@ -53,7 +53,7 @@ parsing responses.
 
 =cut
 
-use 5.010001;
+use 5.008008;
 use strict;
 use warnings;
 use Carp;
@@ -76,7 +76,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = ( map { @$_ } values %EXPORT_TAGS );
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 our @EXPORT = @{ $EXPORT_TAGS{client} };
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 
 =head1 EXPORT

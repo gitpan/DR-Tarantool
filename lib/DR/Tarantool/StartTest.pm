@@ -9,7 +9,6 @@ use File::Path 'rmtree';
 use File::Spec::Functions qw(catfile);
 use Cwd;
 use IO::Socket::INET;
-use feature 'state';
 
 =head1 NAME
 
@@ -103,8 +102,9 @@ sub _start_tarantool {
 
     return unless open my $fh, '>:encoding(UTF-8)', $self->{cfg};
 
-    print $fh "slab_alloc_arena = 0.1\n";
     print $fh "\n\n\n", $self->{cfg_data}, "\n\n\n";
+
+    print $fh "slab_alloc_arena = 1.1\n";
 
     for (qw(admin_port primary_port secondary_port)) {
         printf $fh "%s = %s\n", $_, $self->{$_};
@@ -192,20 +192,24 @@ sub DESTROY {
     rmtree $self->{temp} if $self->{temp};
 }
 
-sub _find_free_port {
-    state $start_port = 10000;
+{
+    my $start_port;
 
-    while( ++$start_port < 60000 ) {
-        return $start_port if IO::Socket::INET->new(
-            Listen    => 5,
-            LocalAddr => '127.0.0.1',
-            LocalPort => $start_port,
-            Proto     => 'tcp',
-            (($^O eq 'MSWin32') ? () : (ReuseAddr => 1)),
-        );
+    sub _find_free_port {
+        $start_port = 10000 unless defined $start_port;
+
+        while( ++$start_port < 60000 ) {
+            return $start_port if IO::Socket::INET->new(
+                Listen    => 5,
+                LocalAddr => '127.0.0.1',
+                LocalPort => $start_port,
+                Proto     => 'tcp',
+                (($^O eq 'MSWin32') ? () : (ReuseAddr => 1)),
+            );
+        }
+
+        croak "Can't find free port";
     }
-
-    croak "Can't find free port";
 }
 
 =head1 COPYRIGHT AND LICENSE

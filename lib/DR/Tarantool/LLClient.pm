@@ -108,6 +108,8 @@ use Scalar::Util 'weaken';
 require DR::Tarantool;
 use Data::Dumper;
 
+my $LE = $] > 5.01 ? '<' : '';
+
 
 =head2 connect
 
@@ -505,7 +507,7 @@ sub _read_header {
     return sub {
         my (undef, $data) = @_;
         croak "Unexpected data length" unless $data and length $data == 12;
-        my (undef, $blen ) = unpack 'L< L<', $data;
+        my (undef, $blen ) = unpack "L$LE L$LE", $data;
 
         $self->{handle}->push_read( chunk => $blen, $self->_read_reply($data) );
     }
@@ -671,7 +673,8 @@ sub _check_tuple_list {
 
 sub _check_number {
     my ($self, $number) = @_;
-    croak "argument must be number" unless $number ~~ /^\d+$/;
+    croak "argument must be number"
+        unless defined $number and $number =~ /^\d+$/;
 }
 
 
@@ -680,7 +683,8 @@ sub _check_operation {
     croak 'Operation must be ARRAYREF' unless 'ARRAY' eq ref $op;
     croak 'Wrong update operation: too short arglist' unless @$op >= 2;
     croak "Wrong operation: $op->[1]"
-        unless $op->[1] ~~ /^(delete|set|insert|add|and|or|xor|substr)$/;
+        unless $op->[1] and
+            $op->[1] =~ /^(delete|set|insert|add|and|or|xor|substr)$/;
     $self->_check_number($op->[0]);
 }
 

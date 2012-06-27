@@ -6,6 +6,8 @@ package DR::Tarantool::Spaces;
 use Carp;
 $Carp::Internal{ (__PACKAGE__) }++;
 
+my $LE = $] > 5.01 ? '<' : '';
+
 =head1 NAME
 
 DR::Tarantool::Spaces - spaces container
@@ -52,8 +54,8 @@ DR::Tarantool::Spaces - spaces container
     });
 
     my $f = $s->pack_field('users', 'counter', 10);
-    my $f = $s->pack_field('users', 1, 10);             # the same
-    my $f = $s->pack_field(1, 1, 10);                   # the same
+    my $f = $s->pack_field('users', 3, 10);             # the same
+    my $f = $s->pack_field(1, 3, 10);                   # the same
 
     my $ts = $s->pack_keys([1,2,3] => 'my_idx');
     my $t = $s->pack_primary_key([1,2,3]);
@@ -216,14 +218,15 @@ constructor
 
 sub new {
     my ($class, $no, $space) = @_;
-    croak 'space number must conform the regexp qr{^\d+}' unless $no ~~ /^\d+$/;
+    croak 'space number must conform the regexp qr{^\d+}'
+        unless defined $no and $no =~ /^\d+$/;
     croak "'fields' not defined in space hash"
         unless 'ARRAY' eq ref $space->{fields};
     croak "wrong 'indexes' hash"
         if !$space->{indexes} or 'HASH' ne ref $space->{indexes};
 
     my $name = $space->{name};
-    croak 'wrong space name: ' . ($name // 'undef')
+    croak 'wrong space name: ' . (defined($name) ? $name : 'undef')
         unless $name and $name =~ /^[a-z_]\w*$/i;
 
 
@@ -253,11 +256,13 @@ sub new {
         }
 
         my $s = $fields[ -1 ];
-        croak 'unknown field type: ' . ($s->{type} // 'undef')
-            unless $s->{type} and $s->{type} =~ $fqr;
+        croak 'unknown field type: ' .
+            (defined($s->{type}) ? $s->{type} : 'undef')
+                unless $s->{type} and $s->{type} =~ $fqr;
 
-        croak 'wrong field name: ' . ($s->{name} // 'undef')
-            unless $s->{name} and $s->{name} =~ /^[a-z_]\w*$/i;
+        croak 'wrong field name: ' .
+            (defined($s->{name}) ? $s->{name} : 'undef')
+                unless $s->{name} and $s->{name} =~ /^[a-z_]\w*$/i;
 
         croak "Duplicate field name: $s->{name}" if exists $fast{ $s->{name} };
         $fast{ $s->{name} } = $no;
@@ -366,15 +371,15 @@ sub pack_field {
     my $v = $value;
     utf8::encode( $v ) if utf8::is_utf8( $v );
     return $v if $type eq 'STR' or $type eq 'UTF8STR';
-    return pack 'L<' => $v if $type eq 'NUM';
-    return pack 'l<' => $v if $type eq 'INT';
-    return pack 'Q<' => $v if $type eq 'NUM64';
-    return pack 'q<' => $v if $type eq 'INT64';
+    return pack "L$LE" => $v if $type eq 'NUM';
+    return pack "l$LE" => $v if $type eq 'INT';
+    return pack "Q$LE" => $v if $type eq 'NUM64';
+    return pack "q$LE" => $v if $type eq 'INT64';
 
     if ($type eq 'MONEY' or $type eq 'BIGMONEY') {
         my ($r, $k) = split /\./, $v;
         for ($k) {
-            $_ //= '.00';
+            $_ = '.00' unless defined $_;
             s/^\.//;
             $_ .= '0' if length $_ < 2;
             $_ = substr $_, 0, 2;
@@ -387,8 +392,8 @@ sub pack_field {
             $v = $r * 100 + $k;
         }
 
-        return pack 'l<', $v if $type eq 'MONEY';
-        return pack 'q<', $v;
+        return pack "l$LE", $v if $type eq 'MONEY';
+        return pack "q$LE", $v;
     }
 
 
@@ -420,14 +425,14 @@ sub unpack_field {
         return $v;
     }
 
-    $v = unpack 'L<' => $v  if $type eq 'NUM';
-    $v = unpack 'l<' => $v  if $type eq 'INT';
-    $v = unpack 'Q<' => $v  if $type eq 'NUM64';
-    $v = unpack 'q<' => $v  if $type eq 'INT64';
+    $v = unpack "L$LE" => $v  if $type eq 'NUM';
+    $v = unpack "l$LE" => $v  if $type eq 'INT';
+    $v = unpack "Q$LE" => $v  if $type eq 'NUM64';
+    $v = unpack "q$LE" => $v  if $type eq 'INT64';
     utf8::decode( $v )      if $type eq 'UTF8STR';
     if ($type eq 'MONEY' or $type eq 'BIGMONEY') {
-        $v = unpack 'l<' => $v if $type eq 'MONEY';
-        $v = unpack 'q<' => $v if $type eq 'BIGMONEY';
+        $v = unpack "l$LE" => $v if $type eq 'MONEY';
+        $v = unpack "q$LE" => $v if $type eq 'BIGMONEY';
         my $s = '';
         if ($v < 0) {
             $v = -$v;
