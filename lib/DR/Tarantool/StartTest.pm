@@ -9,6 +9,7 @@ use File::Path 'rmtree';
 use File::Spec::Functions qw(catfile rel2abs);
 use Cwd;
 use IO::Socket::INET;
+use POSIX ();
 
 =head1 NAME
 
@@ -138,6 +139,7 @@ sub _start_tarantool {
     goto EXIT if $?;
 
     unless ($self->{child} = fork) {
+        POSIX::setsid();
         exec "tarantool_box -c $self->{cfg}";
         die "Can't start tarantool_box: $!\n";
     }
@@ -207,22 +209,22 @@ sub DESTROY {
 }
 
 {
-    my $start_port;
+    my %busy_ports;
 
     sub _find_free_port {
-        $start_port = 10000 unless defined $start_port;
 
-        while( ++$start_port < 60000 ) {
-            return $start_port if IO::Socket::INET->new(
+        while( 1 ) {
+            my $port = 10000 + int rand 30000;
+            next if exists $busy_ports{ $port };
+            next unless IO::Socket::INET->new(
                 Listen    => 5,
                 LocalAddr => '127.0.0.1',
-                LocalPort => $start_port,
+                LocalPort => $port,
                 Proto     => 'tcp',
                 (($^O eq 'MSWin32') ? () : (ReuseAddr => 1)),
             );
+            return $busy_ports{ $port } = $port;
         }
-
-        croak "Can't find free port";
     }
 }
 
