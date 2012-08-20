@@ -9,7 +9,7 @@ use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
 my $LE = $] > 5.01 ? '<' : '';
 
-use constant PLAN       => 94;
+use constant PLAN       => 100;
 use Test::More;
 BEGIN {
     eval "use Coro";
@@ -87,6 +87,8 @@ SKIP: {
     );
 
     isa_ok $client => 'DR::Tarantool::CoroClient';
+    is $client->last_code, undef, 'last_code';
+    is $client->last_error_string, undef, 'last_error_string';
     ok $client->ping, '* ping';
 
     my $t = $client->insert(
@@ -169,6 +171,27 @@ SKIP: {
     );
     isa_ok $t->json => 'HASH', 'JSON insert: hash';
     is $t->json->{привет}, 'медвед', 'JSON insert: hash utf8 value';
+    
+    ok !eval {
+        $client->insert(
+            first_space => [ 1 ], TNT_FLAG_RETURN | TNT_FLAG_ADD
+        );
+        1
+    }, 'raise error';
+    like $@, qr{Tuple already exists}, 'error message';
+
+    {
+        local $client->{raise_error};
+        ok eval {
+            $client->insert(
+                first_space => [ 1 ], TNT_FLAG_RETURN | TNT_FLAG_ADD
+            );
+            1
+        }, 'no raise error';
+        like $client->last_error_string, qr{Tuple already exists},
+            'error message';
+    }
+
 
     my $start = AnyEvent::now;
     my (@fibers, %tuples);

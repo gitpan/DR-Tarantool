@@ -98,8 +98,8 @@ after extracting from database.
 
 sub new {
     my ($class, $spaces) = @_;
+    $spaces = {} unless defined $spaces;
     croak 'spaces must be a HASHREF' unless 'HASH' eq ref $spaces;
-    croak "'spaces' is empty" unless %$spaces;
 
     my (%spaces, %fast);
     for (keys %$spaces) {
@@ -135,6 +135,18 @@ sub space {
     croak "space '$space' is not defined"
         unless exists $self->{spaces}{$space};
     return $self->{spaces}{$space};
+}
+
+
+=head2 space_number
+
+Returns space number by its name.
+
+=cut
+
+sub space_number {
+    my ($self, $space) = @_;
+    return $self->space($space)->number;
 }
 
 
@@ -204,6 +216,8 @@ package DR::Tarantool::Space;
 use Carp;
 $Carp::Internal{ (__PACKAGE__) }++;
 use JSON::XS ();
+use Digest::MD5 ();
+
 
 =head1 SPACES methods
 
@@ -304,6 +318,9 @@ sub new {
         }
     }
 
+    my $tuple_class = 'DR::Tarantool::Tuple::Instance' .
+        Digest::MD5::md5_hex( join "\0", sort keys %fast );
+
     bless {
         fields          => \@fields,
         fast            => \%fast,
@@ -311,8 +328,39 @@ sub new {
         number          => $no,
         default_type    => $default_type,
         indexes         => \%indexes,
+        tuple_class     => $tuple_class,
     } => ref($class) || $class;
 
+}
+
+
+=head2 tuple_class
+
+Creates (or returns) class for storage tuples. The class will be child of
+L<DR::Tarantool::Tuple>. Returns unique class (package) name. If package
+is already exists, the method won't recreate it.
+
+=cut
+
+sub tuple_class {
+    my ($self) = @_;
+    my $class = $self->{tuple_class};
+
+
+    no strict 'refs';
+    return $class if ${ $class . '::CREATED' };
+
+    die unless eval "package $class; use base 'DR::Tarantool::Tuple'; 1";
+
+    for my $fname (keys %{ $self->{fast} }) {
+        my $fnumber = $self->{fast}{$fname};
+
+        *{ $class . '::' . $fname } = eval "sub { \$_[0]->raw($fnumber) }";
+    }
+
+    ${ $class . '::CREATED' } = time;
+
+    return $class;
 }
 
 
@@ -344,6 +392,32 @@ sub _field {
     croak "field with name '$field' is not defined in this space"
         unless exists $self->{fast}{$field};
     return $self->{fields}[ $self->{fast}{$field} ];
+}
+
+
+=head2 field_number
+
+Returns number of field by its name.
+
+=cut
+
+sub field_number {
+    my ($self, $field) = @_;
+    croak 'field name or number is not defined' unless defined $field;
+    return $self->{fast}{$field} if exists $self->{fast}{$field};
+    croak "Can't find field '$field' in this space";
+}
+
+
+=head2 tail_index
+
+Returns index of the first element that is not described in the space.
+
+=cut
+
+sub tail_index {
+    my ($self) = @_;
+    return scalar @{ $self->{fields} };
 }
 
 
