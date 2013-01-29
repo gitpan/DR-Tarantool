@@ -76,7 +76,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = ( map { @$_ } values %EXPORT_TAGS );
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 our @EXPORT = @{ $EXPORT_TAGS{client} };
-our $VERSION = '0.33';
+our $VERSION = '0.34';
 
 
 =head1 EXPORT
@@ -183,7 +183,7 @@ L<DR::Tarantool::AsyncClient>.
 =head1 VCS
 
 The project is placed git repo on github:
-L<https://github.com/unera/dr-tarantool/>.
+L<https://github.com/dr-co/dr-tarantool/>.
 
 =cut
 
