@@ -99,7 +99,14 @@ sub log {
 
 sub _start_tarantool {
     my ($self) = @_;
-    $self->{temp} = tempdir;
+    if ($ENV{TARANTOOL_TEMPDIR}) {
+        $self->{temp} = $ENV{TARANTOOL_TEMPDIR};
+        $self->{dont_unlink_temp} = 1;
+        rmtree $self->{temp} if -d $self->{temp};
+        mkdir $self->{temp};
+    } else {
+        $self->{temp} = tempdir;
+    }
     $self->{cfg} = catfile $self->{temp}, 'tarantool.cfg';
     $self->{log} = catfile $self->{temp}, 'tarantool.log';
     $self->{pid} = catfile $self->{temp}, 'tarantool.pid';
@@ -140,7 +147,7 @@ sub _start_tarantool {
     system "$self->{box} -c $self->{cfg} --init-storage ".
         ">> $self->{log} 2>&1";
     goto EXIT if $?;
-    return $self->_restart;
+    $self->_restart;
     EXIT:
         chdir $self->{cwd};
 
@@ -148,7 +155,9 @@ sub _start_tarantool {
 
 sub _restart {
     my ($self) = @_;
+
     unless ($self->{child} = fork) {
+        chdir $self->{temp};
         die "Can't fork: $!" unless defined $self->{child};
         POSIX::setsid();
         exec "ulimit -c unlimited; ".
@@ -167,7 +176,6 @@ sub _restart {
 
         sleep 0.01;
     }
-
 }
 
 sub restart {
@@ -183,6 +191,15 @@ Returns tarantool primary port
 =cut
 
 sub primary_port { return $_[0]->{primary_port} }
+
+
+=head2 admin_port
+
+Returns tarantool admin port
+
+=cut
+
+sub admin_port { return $_[0]->{admin_port} }
 
 
 =head2 tarantool_pid
@@ -234,6 +251,7 @@ Destructor. Kills tarantool, removes temporary files.
 
 sub DESTROY {
     my ($self) = @_;
+    local $?;
     chdir $self->{cwd};
     return unless $self->{master} == $$;
 
@@ -243,7 +261,21 @@ sub DESTROY {
     }
 
     $self->kill;
-    rmtree $self->{temp} if $self->{temp};
+    rmtree $self->{temp} if $self->{temp} and !$self->{dont_unlink_temp};
+}
+
+
+sub temp_dir {
+    my ($self) = @_;
+    return $self->{temp};
+}
+
+
+sub clean_xlogs {
+    my ($self) = @_;
+    return unless $self->{temp};
+    my @xlogs = glob catfile $self->{temp}, '*.xlog';
+    unlink for @xlogs;
 }
 
 {
