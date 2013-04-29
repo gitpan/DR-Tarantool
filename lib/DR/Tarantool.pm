@@ -123,9 +123,9 @@ how to describe a schema.
 	);
 
 The callback passed to connect() gets invoked after a connection
-is established. The callback's only argument is the newly
+is established. The only argument of the callback is the newly
 established connection handle. The handle's type is
-DR::Tarantool::AsyncClient.
+L<DR::Tarantool::AsyncClient>.
 
 =head3 L<DR::Tarantool::CoroClient> and L<DR::Tarantool::SyncClient>
 
@@ -309,7 +309,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = ( map { @$_ } values %EXPORT_TAGS );
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 our @EXPORT = @{ $EXPORT_TAGS{client} };
-our $VERSION = '0.36';
+our $VERSION = '0.37';
 
 =head1 EXPORT
 
