@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name:               DR-Tarantool
-version:            0.37
-abstract:           a Perl driver for L<Tarantool/Box|http://tarantool.org>
+version:            0.38
+abstract:           a Perl driver for L<Tarantool|http://tarantool.org>
 author:
     - Dmitry E. Oboukhov <unera@debian.org>
 license:            artistic
