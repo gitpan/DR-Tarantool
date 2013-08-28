@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               DR-Tarantool
-version:            0.39
+version:            0.40
 abstract:           a Perl driver for L<Tarantool|http://tarantool.org>
 author:
     - Dmitry E. Oboukhov <unera@debian.org>

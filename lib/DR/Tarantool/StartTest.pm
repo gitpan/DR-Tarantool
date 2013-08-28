@@ -176,6 +176,13 @@ sub _restart {
 
         sleep 0.01;
     }
+
+    for (my $i = 0; $i < 100; $i++) {
+        last if $self->log =~ /entering event loop/;
+        sleep 0.01;
+    }
+
+    sleep 1 unless $self->log =~ /entering event loop/;
 }
 
 sub restart {
@@ -309,7 +316,7 @@ sub clean_xlogs {
 =head1 VCS
 
 The project is placed git repo on github:
-L<https://github.com/unera/dr-tarantool/>.
+L<https://github.com/dr-co/dr-tarantool/>.
 
 =cut
 
