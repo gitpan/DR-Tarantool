@@ -62,4 +62,5 @@ t/test-data/empty_tuple.00022-000-ok.bin
 t/test-data/init.lua
 t/test-data/llc-easy2.cfg
 t/test-data/llc-easy.cfg
-META.yml                                 Module meta-data (added by MakeMaker)
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)
