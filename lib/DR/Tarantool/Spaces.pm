@@ -98,13 +98,16 @@ from the server.
 =cut
 
 sub new {
-    my ($class, $spaces) = @_;
+    my ($class, $spaces, %opts) = @_;
+
+    $opts{family} ||= 1;
+
     $spaces = {} unless defined $spaces;
     croak 'spaces must be a HASHREF' unless 'HASH' eq ref $spaces;
 
     my (%spaces, %fast);
     for (keys %$spaces) {
-        my $s = new DR::Tarantool::Space($_ => $spaces->{ $_ });
+        my $s = new DR::Tarantool::Space($_ => $spaces->{ $_ }, %opts);
         $spaces{ $s->name } = $s;
         $fast{ $_ } = $s->name;
     }
@@ -112,7 +115,17 @@ sub new {
     return bless {
         spaces  => \%spaces,
         fast    => \%fast,
+        family  => $opts{family},
     } => ref($class) || $class;
+}
+
+
+sub family {
+    my ($self, $family) = @_;
+    return $self->{family} if @_ == 1;
+    $self->{family} = $family;
+    $_->family($family) for values %{ $self->{spaces} };
+    return $self->{family};
 }
 
 
@@ -232,7 +245,9 @@ constructor
 =cut
 
 sub new {
-    my ($class, $no, $space) = @_;
+    my ($class, $no, $space, %opts) = @_;
+
+    $opts{family} ||= 1;
     croak 'space number must conform the regexp qr{^\d+}'
         unless defined $no and $no =~ /^\d+$/;
     croak "'fields' not defined in space hash"
@@ -330,8 +345,16 @@ sub new {
         default_type    => $default_type,
         indexes         => \%indexes,
         tuple_class     => $tuple_class,
+        family          => $opts{family},
     } => ref($class) || $class;
 
+}
+
+
+sub family {
+    my ($self, $family) = @_;
+    return $self->{family} if @_ == 1;
+    return $self->{family} = $family;
 }
 
 
@@ -532,8 +555,12 @@ sub pack_tuple {
     my ($self, $tuple) = @_;
     croak 'tuple must be ARRAYREF' unless 'ARRAY' eq ref $tuple;
     my @res;
-    for (my $i = 0; $i < @$tuple; $i++) {
-        push @res => $self->pack_field($i, $tuple->[ $i ]);
+    if ($self->family == 1) {
+        for (my $i = 0; $i < @$tuple; $i++) {
+            push @res => $self->pack_field($i, $tuple->[ $i ]);
+        }
+    } else {
+        @res = @$tuple;
     }
     return \@res;
 }
@@ -549,8 +576,12 @@ sub unpack_tuple {
     my ($self, $tuple) = @_;
     croak 'tuple must be ARRAYREF' unless 'ARRAY' eq ref $tuple;
     my @res;
-    for (my $i = 0; $i < @$tuple; $i++) {
-        push @res => $self->unpack_field($i, $tuple->[ $i ]);
+    if ($self->family == 1) {
+        for (my $i = 0; $i < @$tuple; $i++) {
+            push @res => $self->unpack_field($i, $tuple->[ $i ]);
+        }
+    } else {
+        @res = @$tuple;
     }
     return \@res;
 }
@@ -641,28 +672,36 @@ sub pack_operation {
     my ($self, $op) = @_;
     croak 'wrong operation' unless 'ARRAY' eq ref $op and @$op > 1;
 
-    my $fno = $op->[0];
-    my $opname = $op->[1];
+    if ($self->family == 1) {
+        my $fno = $op->[0];
+        my $opname = $op->[1];
 
+        my $f = $self->_field($fno);
+
+        if ($opname eq 'delete') {
+            croak 'wrong operation' unless @$op == 2;
+            return [ $f->{idx} => $opname ];
+        }
+
+        if ($opname =~ /^(?:set|insert|add|and|or|xor)$/) {
+            croak 'wrong operation' unless @$op == 3;
+            return [ $f->{idx} => $opname, $self->pack_field($fno, $op->[2]) ];
+        }
+
+        if ($opname eq 'substr') {
+            croak 'wrong operation11' unless @$op >= 4;
+            croak 'wrong offset in substr operation' unless $op->[2] =~ /^\d+$/;
+            croak 'wrong length in substr operation' unless $op->[3] =~ /^\d+$/;
+            return [ $f->{idx}, $opname, $op->[2], $op->[3], $op->[4] ];
+        }
+        croak "unknown operation: $opname";
+    }
+
+    my $fno = $op->[1];
     my $f = $self->_field($fno);
-
-    if ($opname eq 'delete') {
-        croak 'wrong operation' unless @$op == 2;
-        return [ $f->{idx} => $opname ];
-    }
-
-    if ($opname =~ /^(?:set|insert|add|and|or|xor)$/) {
-        croak 'wrong operation' unless @$op == 3;
-        return [ $f->{idx} => $opname, $self->pack_field($fno, $op->[2]) ];
-    }
-
-    if ($opname eq 'substr') {
-        croak 'wrong operation11' unless @$op >= 4;
-        croak 'wrong offset in substr operation' unless $op->[2] =~ /^\d+$/;
-        croak 'wrong length in substr operation' unless $op->[3] =~ /^\d+$/;
-        return [ $f->{idx}, $opname, $op->[2], $op->[3], $op->[4] ];
-    }
-    croak "unknown operation: $opname";
+    my @res = @$op;
+    splice @res, 1, 1, $f->{idx};
+    return \@res;
 }
 
 sub pack_operations {

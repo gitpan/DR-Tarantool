@@ -4,7 +4,7 @@
       "Dmitry E. Oboukhov <unera@debian.org>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.140640",
    "license" : [
       "artistic_1"
    ],
@@ -40,7 +40,8 @@
             "File::Spec::Functions" : "0",
             "File::Temp" : "0",
             "IO::Socket::INET" : "0",
-            "JSON::XS" : "0"
+            "JSON::XS" : "0",
+            "List::MoreUtils" : "0"
          }
       }
    },
@@ -54,5 +55,5 @@
          "url" : "https://github.com/dr-co/dr-tarantool"
       }
    },
-   "version" : "0.42"
+   "version" : "0.43"
 }
