@@ -32,4 +32,4 @@ resources:
   bugtracker: https://github.com/dr-co/dr-tarantool/issues
   homepage: https://github.com/dr-co/dr-tarantool
   repository: https://github.com/dr-co/dr-tarantool
-version: '0.43'
+version: '0.44'
